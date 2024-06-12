@@ -8,9 +8,26 @@ import time
 app = Flask(__name__)
 
 user_data = {}
+
+def close_app(package_name):
+    # Get the PID of the running app
+    pid_cmd = f"pidof {package_name}"
+    pid_output = os.popen(pid_cmd).read()
+    pid = pid_output.strip()  # Remove leading/trailing whitespace
+
+    # If PID is found, kill the app
+    if pid:
+        kill_cmd = f"kill {pid}"
+        os.system(kill_cmd)
+        print(f"Closed app with package name: {package_name}")
+    else:
+        print(f"App with package name {package_name} is not running")
+
+
 def launch_roblox_with_private_server(private_server_link, username):
     packagename = user_data.get(username, {}).get('packagename')
     if packagename:
+        close_app(packagename)
         cmd = f"am start -a android.intent.action.VIEW -d '{private_server_link}' {packagename}"
         os.system(cmd)
         print(f"Launched Roblox game with ps: {private_server_link} for user: {username}")
@@ -65,6 +82,27 @@ def add_user():
     print(f"User added: {username}")
     return jsonify({"message": f"User '{username}' added successfully"}), 201
 
+    @app.route('/rejoinroblox', methods=['POST'])
+    def rejoin_roblox():
+        try:
+            username = request.json.get('username')
+            print(f"Received rejoinroblox request for user: {username}")
+            
+            if username in user_data:
+                user_info = user_data[username]
+                if user_info['is_ps']:
+                    launch_roblox_with_private_server(user_info['ps_link'], username)
+                else:
+                    launch_roblox(user_info['game_id'], username)
+                return jsonify({"message": f"Rejoined Roblox game for user: {username}"}), 200
+            else:
+                print(f"User '{username}' not found")
+                return jsonify({"error": f"User '{username}' not found"}), 404
+
+        except Exception as e:
+            print(f"Error occurred while processing rejoin request: {e}")
+            return jsonify({"error": "Internal server error"}), 500
+
 def check_inactive_users():
     print("Starting check_inactive_users thread...")
     while True:
@@ -73,7 +111,7 @@ def check_inactive_users():
         inactive_users = []
         for username, data in user_data.items():
             last_update = datetime.strptime(data['last_update'], '%Y-%m-%d %H:%M:%S.%f')
-            if now - last_update > timedelta(minutes=5):
+            if now - last_update > timedelta(minutes=1):
                 print(f"User Inactive: '{username}'")
                 inactive_users.append(username)
         
