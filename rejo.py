@@ -4,30 +4,28 @@ from datetime import datetime, timedelta
 import os
 import threading
 import time
+import subprocess
 
 app = Flask(__name__)
 
 user_data = {}
 
-def close_app(package_name):
-    # Get the PID of the running app
-    pid_cmd = f"pidof {package_name}"
-    pid_output = os.popen(pid_cmd).read()
-    pid = pid_output.strip()  # Remove leading/trailing whitespace
+def get_pid(package):
+    pid_cmd = f"pidof {package}"
+    pid_output = subprocess.getoutput(pid_cmd)
+    pid = pid_output.strip()
 
-    # If PID is found, kill the app
     if pid:
-        kill_cmd = f"kill {pid}"
-        os.system(kill_cmd)
-        print(f"Closed app with package name: {package_name}")
-    else:
-        print(f"App with package name {package_name} is not running")
-
+        return pid
 
 def launch_roblox_with_private_server(private_server_link, username):
     packagename = user_data.get(username, {}).get('packagename')
+    pid = get_pid(packagename)
     if packagename:
-        close_app(packagename)
+        if pid:
+            close = f"su -c 'kill {pid}'"
+            os.system(close)
+        time.sleep(5)
         cmd = f"am start -a android.intent.action.VIEW -d '{private_server_link}' {packagename}"
         os.system(cmd)
         print(f"Launched Roblox game with ps: {private_server_link} for user: {username}")
@@ -116,6 +114,7 @@ def check_inactive_users():
                 inactive_users.append(username)
         
         for user in inactive_users:
+            time.sleep(10)
             print(f"User {user} has been inactive for more than 5 minutes")
             if user_data[user]['is_ps'] == True :
                 launch_roblox_with_private_server(user_data[user]['ps_link'], user)
