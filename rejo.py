@@ -5,6 +5,7 @@ import os
 import threading
 import time
 import subprocess
+import requests
 
 app = Flask(__name__)
 
@@ -17,6 +18,26 @@ def get_pid(package):
 
     if pid:
         return pid
+
+def send_webhook(webhook_url, content, avatar_url=None):
+    if webhook_url == "0":
+        print("Webhook URL is set to 0, skipping the request.")
+        return
+
+    data = {
+        "content": content,
+        "username": "Staryuu Auto Rejoin",
+    }
+    
+    if avatar_url:
+        data["avatar_url"] = avatar_url
+    
+    response = requests.post(webhook_url, json=data)
+    
+    if response.status_code == 204:
+        print("Message sent successfully")
+    else:
+        print(f"Failed to send message. Status code: {response.status_code}, response: {response.text}")
 
 def launch_roblox_with_private_server(private_server_link, username):
     packagename = user_data.get(username, {}).get('packagename')
@@ -61,6 +82,7 @@ def add_user():
     game_id = request.json.get('game_id')
     is_ps = request.json.get('is_ps')
     ps = request.json.get("private_link")
+    wb = request.json.get("webhook")
     
     if not username or not packagename or not game_id:
         print("Missing required fields: username, packagename, and game_id are required")
@@ -75,9 +97,11 @@ def add_user():
         'game_id': game_id,
         'ps_link': ps,
         'is_ps': is_ps,
+        'webhook': wb,
         'last_update': str(datetime.now())
     }
     print(f"User added: {username}")
+    send_webhook(wb, f"New user added: ||{username}||")
     return jsonify({"message": f"User '{username}' added successfully"}), 201
 
     @app.route('/rejoinroblox', methods=['POST'])
@@ -92,6 +116,7 @@ def add_user():
                     launch_roblox_with_private_server(user_info['ps_link'], username)
                 else:
                     launch_roblox(user_info['game_id'], username)
+                send_webhook(user_data[username]['webhook'],f"User ||{username }|| has Request Rejoin")
                 return jsonify({"message": f"Rejoined Roblox game for user: {username}"}), 200
             else:
                 print(f"User '{username}' not found")
@@ -122,6 +147,7 @@ def check_inactive_users():
                 launch_roblox(user_data[user]['game_id'], user)
 
             user_data[user]['last_update'] = str(datetime.now())
+            send_webhook(user_data[user]['webhook'],f"User ||{user}|| has been inactive, {user_data[username]['last_update']}")
         print("Inactive users checked.")
 
 
