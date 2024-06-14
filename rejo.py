@@ -116,7 +116,7 @@ def add_user():
                     launch_roblox_with_private_server(user_info['ps_link'], username)
                 else:
                     launch_roblox(user_info['game_id'], username)
-                send_webhook(user_data[username]['webhook'],f"User ||{username }|| has Request Rejoin")
+                send_webhook(user_data[username]['webhook'],f"User ||{username}|| has Request Rejoin")
                 return jsonify({"message": f"Rejoined Roblox game for user: {username}"}), 200
             else:
                 print(f"User '{username}' not found")
