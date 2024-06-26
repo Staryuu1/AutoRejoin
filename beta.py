@@ -41,6 +41,7 @@ def send_webhook(webhook_url, content, avatar_url=None):
 
 def launch_roblox_with_private_server(private_server_link, username):
     packagename = user_data.get(username, {}).get('packagename')
+    crash = user_data.get(username, {}).get('cc')
     pid = get_pid(packagename)
     if packagename:
         if pid:
@@ -49,7 +50,9 @@ def launch_roblox_with_private_server(private_server_link, username):
         time.sleep(5)
         cmd = f"am start -a android.intent.action.VIEW -d '{private_server_link}' {packagename}"
         os.system(cmd)
-        print(f"Launched Roblox game with ps: {private_server_link} for user: {username}")
+        crash += 1
+        user_data[username]['cc'] = crash
+        print(f"Launched Roblox game with ps: {private_server_link} for user: {username} with crash count: {crash}")
     else:
         print(f"Package name not found for user: {username}")
 
@@ -57,10 +60,18 @@ def launch_roblox_with_private_server(private_server_link, username):
 
 def launch_roblox(game_id, username):
     packagename = user_data.get(username, {}).get('packagename')
+    crash = user_data.get(username, {}).get('cc')
+    pid = get_pid(packagename)
     if packagename:
+        if pid:
+            close = f"su -c 'kill {pid}'"
+            os.system(close)
+        time.sleep(5)
         url = f"roblox://placeID={game_id}"
         cmd = f"am start -a android.intent.action.VIEW -d '{url}' {packagename}"
         os.system(cmd)
+        crash += 1
+        user_data[username]['cc'] = crash
         print(f"Launched Roblox game with ID: {game_id} for user: {username}")
     else:
         print(f"Package name not found for user: {username}")
@@ -100,6 +111,7 @@ def add_user():
         'ps_link': ps,
         'is_ps': is_ps,
         'webhook': wb,
+        'cc': 0,
         'last_update': str(datetime.now())
     }
     print(f"User added: {username}")
